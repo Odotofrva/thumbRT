@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Thumbtroller — Tech Pitch Landing</title>
+  <meta name="description" content="Thumbtroller — NES-style controller redesigned with a thumb pad. Powered by Adafruit Feather. USB + Wi-Fi." />
+
+  <!-- Fonts: Orbitron (gaming/tech) + IBM Plex Mono for UI bits -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      /* Brighter “Nintendo-ish” vibe + controller colors */
+      --bg:#f6f7fb;              /* bright page */
+      --panel:#ffffff;           /* cards */
+      --panel2:#f1f3f9;          /* subtle alt */
+      --text:#0b0d12;            /* dark text */
+      --muted:rgba(11,13,18,.68);
+      --line:rgba(11,13,18,.10);
+
+      --red:#e60012;             /* Nintendo-like red */
+      --red2:#b8000e;
+      --black:#0b0d12;           /* controller black */
+      --glow:#39ff14;            /* glow green */
+      --glowSoft: rgba(57,255,20,.22);
+
+      --radius:22px;
+      --shadow: 0 18px 45px rgba(15,18,26,.12);
+
+      --title: Orbitron, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(900px 560px at 10% 0%, rgba(230,0,18,.12), transparent 60%),
+        radial-gradient(900px 560px at 95% 10%, rgba(57,255,20,.10), transparent 55%),
+        linear-gradient(180deg, #ffffff 0%, var(--bg) 35%, #ffffff 100%);
+      overflow-x:hidden;
+    }
+    a{color:inherit;text-decoration:none}
+    .wrap{width:min(1180px, 92vw); margin:0 auto;}
+
+    /* Subtle grid */
+    .gridbg{
+      position:fixed; inset:0; pointer-events:none; opacity:.14;
+      background-image:
+        linear-gradient(to right, rgba(11,13,18,.10) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(11,13,18,.10) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: radial-gradient(circle at 50% 10%, black 0 38%, transparent 70%);
+    }
+
+    /* Top nav */
+    .top{
+      position:sticky; top:0; z-index:50;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(12px);
+      border-bottom:1px solid var(--line);
+    }
+    .top .row{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 0;
+      gap:16px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      min-width: 220px;
+    }
+    .logo{
+      width:38px; height:38px;
+      border-radius:12px;
+      border:1px solid rgba(11,13,18,.12);
+      background:
+        radial-gradient(12px 12px at 30% 30%, rgba(255,255,255,.9), transparent 60%),
+        linear-gradient(135deg, rgba(230,0,18,.92), rgba(11,13,18,.92));
+      box-shadow: 0 0 0 10px rgba(230,0,18,.08), 0 10px 24px rgba(0,0,0,.10);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo::after{
+      content:"";
+      position:absolute; left:-30%; top:0; bottom:0; width:38%;
+      background: linear-gradient(90deg, transparent, rgba(57,255,20,.22), transparent);
+      transform: skewX(-18deg);
+      animation: sweep 2.8s infinite ease-in-out;
+      opacity:.65;
+    }
+    @keyframes sweep{
+      0%{ transform: translateX(-140%) skewX(-18deg); }
+      50%{ transform: translateX(260%) skewX(-18deg); }
+      100%{ transform: translateX(260%) skewX(-18deg); }
+    }
+
+    .brand b{
+      display:block;
+      font-family: var(--title);
+      font-size:14px;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+    }
+    .brand small{
+      display:block;
+      margin-top:2px;
+      font:600 11px/1.2 var(--mono);
+      color:var(--muted);
+      letter-spacing:.06em;
+    }
+
+    nav{display:flex; gap:14px; flex-wrap:wrap; justify-content:flex-end}
+    .navlink{
+      font:700 12px/1 var(--mono);
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      color:rgba(11,13,18,.70);
+      padding:10px 10px;
+      border-radius:999px;
+      border:1px solid transparent;
+      transition: background .2s ease, border-color .2s ease, transform .15s ease, color .2s ease;
+    }
+    .navlink:hover{
+      color:var(--text);
+      background: rgba(11,13,18,.04);
+      border-color: rgba(11,13,18,.10);
+      transform: translateY(-1px);
+    }
+
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:10px;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border:1px solid rgba(11,13,18,.14);
+      background: rgba(255,255,255,.75);
+      color:var(--text);
+      font:800 12px/1 var(--mono);
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      cursor:pointer;
+      transition: transform .15s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+      white-space:nowrap;
+      user-select:none;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.95);
+      border-color: rgba(11,13,18,.22);
+      box-shadow: 0 10px 25px rgba(0,0,0,.08);
+    }
+    .btn.primary{
+      border-color: rgba(230,0,18,.35);
+      background: linear-gradient(180deg, rgba(230,0,18,.96), rgba(184,0,14,.96));
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(230,0,18,.22);
+    }
+    .btn.primary:hover{
+      box-shadow: 0 16px 40px rgba(230,0,18,.26);
+      border-color: rgba(230,0,18,.55);
+    }
+    .btn.glow{
+      border-color: rgba(57,255,20,.32);
+      box-shadow: 0 0 0 8px rgba(57,255,20,.10);
+    }
+
+    @media (max-width: 900px){
+      nav{display:none}
+    }
+
+    /* Sections */
+    section{padding: 34px 0;}
+    .sectionTitle{
+      margin:0 0 14px;
+      font:900 14px/1 var(--mono);
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color: rgba(11,13,18,.78);
+    }
+
+    /* Hero */
+    .hero{padding: 34px 0 14px;}
+    .heroGrid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){
+      .heroGrid{grid-template-columns:1fr}
+    }
+
+    .card{
+      border-radius: var(--radius);
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.90));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(700px 240px at 15% 0%, rgba(230,0,18,.10), transparent 60%),
+        radial-gradient(680px 240px at 85% 10%, rgba(57,255,20,.10), transparent 60%);
+      pointer-events:none;
+      opacity:.95;
+    }
+    .card > *{position:relative}
+
+    .heroCopy{padding: 26px;}
+    .kicker{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(11,13,18,.12);
+      background: rgba(255,255,255,.78);
+      font:800 12px/1 var(--mono);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color: rgba(11,13,18,.70);
+    }
+    .pill{
+      width:8px; height:8px; border-radius:50%;
+      background: var(--glow);
+      box-shadow: 0 0 0 8px rgba(57,255,20,.14), 0 0 18px rgba(57,255,20,.18);
+    }
+
+    h1{
+      margin: 16px 0 10px;
+      font-family: var(--title);
+      font-size: clamp(38px, 5vw, 62px);
+      line-height: 1.03;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .lead{
+      margin:0;
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    .actions{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top: 18px;
+    }
+
+    .metrics{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+    @media (max-width: 560px){ .metrics{grid-template-columns:1fr} }
+    .metric{
+      border:1px solid rgba(11,13,18,.10);
+      background: rgba(11,13,18,.02);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .metric .k{
+      font:800 11px/1.2 var(--mono);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      color: rgba(11,13,18,.62);
+    }
+    .metric .v{
+      margin-top:8px;
+      font:900 15px/1.2 var(--mono);
+    }
+
+    /* Media boxes (show FULL PNGs, no cropping) */
+    .heroVisual{
+      min-height: 520px;
+      display:flex;
+      flex-direction:column;
+    }
+    .mediaBox{
+      flex:1;
+      border-radius: calc(var(--radius) - 2px);
+      border:1px solid rgba(11,13,18,.10);
+      background:
+        radial-gradient(500px 240px at 70% 25%, rgba(57,255,20,.12), transparent 60%),
+        radial-gradient(520px 240px at 25% 10%, rgba(230,0,18,.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.78));
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+    }
+    .mediaBox img{
+      width: 100%;
+      height: 100%;
+      max-height: 520px;
+      object-fit: contain;        /* <-- this ensures the whole PNG is visible */
+      object-position: center;
+      filter: drop-shadow(0 18px 30px rgba(0,0,0,.18));
+    }
+    .imgTopline{
+      padding: 12px 14px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-top:1px solid rgba(11,13,18,.10);
+      color: rgba(11,13,18,.72);
+      font:700 12px/1.4 var(--mono);
+      background: rgba(255,255,255,.86);
+    }
+    .tag{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(11,13,18,.12);
+      background: rgba(255,255,255,.80);
+      color: rgba(11,13,18,.85);
+      font: 900 11px/1 var(--mono);
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      box-shadow: 0 0 0 8px rgba(57,255,20,.08);
+    }
+    .tag i{
+      width:9px; height:9px; border-radius:999px;
+      background: var(--glow);
+      box-shadow: 0 0 12px rgba(57,255,20,.28);
+      display:inline-block;
+    }
+
+    /* Feature pitch tiles */
+    .tiles{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 980px){ .tiles{grid-template-columns:1fr} }
+    .tile{
+      padding: 18px;
+      border-radius: 20px;
+      border:1px solid rgba(11,13,18,.10);
+      background: rgba(255,255,255,.86);
+      transition: transform .18s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+      box-shadow: 0 12px 28px rgba(0,0,0,.06);
+    }
+    .tile:hover{
+      transform: translateY(-2px);
+      border-color: rgba(11,13,18,.18);
+      box-shadow: 0 14px 34px rgba(0,0,0,.08);
+    }
+    .tile b{
+      display:block;
+      font-family: var(--title);
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: .10em;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .tile p{ margin:0; color: var(--muted); line-height:1.7; font-size:14px; }
+
+    /* Big split image section */
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items:stretch;
+    }
+    @media (max-width: 980px){ .split{grid-template-columns:1fr} }
+
+    .bigPhoto{
+      min-height: 420px;
+      border-radius: var(--radius);
+      border:1px solid rgba(11,13,18,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.80));
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .bigPhoto img{
+      width: 100%;
+      height: 100%;
+      max-height: 440px;
+      object-fit: contain;        /* <-- whole PNG visible */
+      object-position: center;
+      filter: drop-shadow(0 18px 30px rgba(0,0,0,.18));
+    }
+
+    .specs{ padding: 22px; }
+    .specs h2{
+      margin:0 0 10px;
+      font-family: var(--title);
+      text-transform: uppercase;
+      font-size: 26px;
+      letter-spacing: .06em;
+    }
+    .specs p{
+      margin:0 0 18px;
+      color: var(--muted);
+      line-height:1.7;
+      font-size:15px;
+    }
+    .specList{
+      border:1px solid rgba(11,13,18,.10);
+      border-radius: 18px;
+      overflow:hidden;
+      background: rgba(255,255,255,.88);
+    }
+    .row{
+      display:flex; gap:12px;
+      padding: 12px 14px;
+      border-bottom:1px solid rgba(11,13,18,.08);
+    }
+    .row:last-child{border-bottom:0}
+    .key{
+      width: 150px;
+      flex: 0 0 150px;
+      color: rgba(11,13,18,.62);
+      font:800 12px/1.4 var(--mono);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .val{ color: rgba(11,13,18,.88); font-size: 14px; line-height:1.6; }
+
+    /* CTA */
+    .cta{
+      padding: 26px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 14px;
+      flex-wrap:wrap;
+    }
+    .cta h3{
+      margin:0;
+      font-family: var(--title);
+      text-transform: uppercase;
+      font-size: 22px;
+      letter-spacing: .08em;
+    }
+    .cta p{
+      margin:6px 0 0;
+      color: var(--muted);
+      line-height:1.6;
+      max-width: 70ch;
+    }
+
+    /* Modal */
+    .overlay{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center; justify-content:center;
+      padding: 18px;
+      background: rgba(11,13,18,.55);
+      z-index: 80;
+    }
+    .modal{
+      width: min(720px, 96vw);
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 28px 80px rgba(0,0,0,.22);
+      overflow:hidden;
+      color: var(--text);
+    }
+    .mhead{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 14px 16px;
+      border-bottom:1px solid rgba(11,13,18,.10);
+      background: linear-gradient(90deg, rgba(230,0,18,.08), rgba(57,255,20,.06), rgba(255,255,255,0));
+    }
+    .mhead b{
+      font:900 12px/1 var(--mono);
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .x{
+      width:38px; height:38px;
+      border-radius: 12px;
+      border:1px solid rgba(11,13,18,.14);
+      background: rgba(255,255,255,.80);
+      cursor:pointer;
+      display:grid; place-items:center;
+    }
+    .x:hover{ border-color: rgba(11,13,18,.26); background: rgba(255,255,255,.96); }
+    .mbody{ padding: 16px; }
+
+    label{
+      display:block;
+      font:900 12px/1.2 var(--mono);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      color: rgba(11,13,18,.62);
+      margin: 10px 0 6px;
+    }
+    input, textarea, select{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 16px;
+      border:1px solid rgba(11,13,18,.12);
+      background: rgba(255,255,255,.92);
+      color: var(--text);
+      font: 500 14px/1.2 var(--sans);
+      outline:none;
+    }
+    input:focus, textarea:focus, select:focus{
+      border-color: rgba(57,255,20,.35);
+      box-shadow: 0 0 0 6px rgba(57,255,20,.12);
+    }
+    textarea{ min-height: 96px; resize: vertical; }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 560px){ .grid2{grid-template-columns:1fr} }
+
+    .hint{
+      margin-top:10px;
+      color: rgba(11,13,18,.55);
+      font-size: 12px;
+      line-height:1.55;
+    }
+
+    footer{
+      padding: 34px 0 56px;
+      border-top:1px solid rgba(11,13,18,.10);
+      color: rgba(11,13,18,.62);
+    }
+    .foot{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;
+      font: 700 12px/1.6 var(--mono);
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{transition:none !important; scroll-behavior:auto !important; animation:none !important;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="gridbg" aria-hidden="true"></div>
+
+  <!-- Top -->
+  <div class="top">
+    <div class="wrap row">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <b>Thumbtroller by RoboTechi Co.</b>
+          <small>NES FORM • THUMBPAD CONTROL • FOR THE CULTURE</small>
+        </div>
+      </div>
+
+      <nav aria-label="Primary">
+        <a class="navlink" href="#overview">Overview</a>
+        <a class="navlink" href="#features">Features</a>
+        <a class="navlink" href="#specs">Specs</a>
+        <a class="navlink" href="#cta">Contact</a>
+      </nav>
+
+      <div style="display:flex; gap:10px;">
+        <button class="btn" id="openDeck">Request Deck</button>
+        <button class="btn primary" id="openUpdates">Get Updates</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero" id="overview">
+    <div class="wrap heroGrid">
+      <div class="card heroCopy">
+        <div class="kicker"><span class="pill"></span> A modern controller built on a maker-grade platform</div>
+        <h1>Retro feel. <br/>Modern control.</h1>
+        <p class="lead">
+          <b>Thumbtroller</b> takes the NES silhouette and replaces the D-pad with a smooth <b>thumb pad</b>.
+          Under the hood, an <b>Adafruit Feather</b> powers fast input scanning and modern connectivity.
+          Designed for <b>USB</b> play and <b>Wi-Fi</b> features like profiles and updates.
+        </p>
+
+        <div class="actions">
+          <a class="btn primary" href="#features">See the Pitch</a>
+          <a class="btn glow" href="#specs">View Specs</a>
+        </div>
+
+        <div class="metrics" aria-label="Key highlights">
+          <div class="metric">
+            <div class="k">Core Input</div>
+            <div class="v">Thumb Pad</div>
+          </div>
+          <div class="metric">
+            <div class="k">Compute</div>
+            <div class="v">Adafruit Feather</div>
+          </div>
+          <div class="metric">
+            <div class="k">Connectivity</div>
+            <div class="v">USB + Wi-Fi</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card heroVisual">
+        <!-- ✅ FULL PNG shown (no cropping) -->
+        <div class="mediaBox" aria-label="Front view product image">
+          <img src="front.png" alt="Thumbtroller controller — front view" />
+        </div>
+
+        <div class="imgTopline">
+          <span class="tag"><i></i> GLOW GREEN • NES RED • MATTE BLACK</span>
+          <span style="color:rgba(11,13,18,.92); font-family:var(--title); letter-spacing:.10em;">THUMBTROLLER v1</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sectionTitle">Why it wins</div>
+      <div class="tiles">
+        <div class="tile">
+          <b>Better diagonals</b>
+          <p>Thumb pad motion supports smoother diagonals than a classic D-pad, tuned for platformers and top-down play.</p>
+        </div>
+        <div class="tile">
+          <b>Maker-grade brain</b>
+          <p>Feather-based core keeps the controller modular: iterate firmware, refine inputs, and expand features quickly.</p>
+        </div>
+        <div class="tile">
+          <b>Modern connectivity</b>
+          <p>USB for plug-and-play. Wi-Fi for profiles, updates, and companion experiences on your roadmap.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BIG IMAGE + SPECS -->
+  <section id="specs">
+    <div class="wrap split">
+      <!-- ✅ FULL PNG shown (no cropping) -->
+      <div class="bigPhoto" aria-label="Side view product image">
+        <img src="side.png" alt="Thumbtroller controller — side view" />
+      </div>
+
+      <div class="card specs">
+        <div class="sectionTitle">Core specs</div>
+        <h2>Built like a product. Built like a platform.</h2>
+        <p>
+          Thumbtroller is engineered around a Feather brain so hardware and firmware can evolve together—ideal for
+          versions, drops, and special editions.
+        </p>
+
+        <div class="specList" role="list">
+          <div class="row" role="listitem">
+            <div class="key">Form factor</div>
+            <div class="val">NES-inspired shell, modern internal architecture</div>
+          </div>
+          <div class="row" role="listitem">
+            <div class="key">Directional</div>
+            <div class="val">Thumb pad (mapped to crisp digital directions)</div>
+          </div>
+          <div class="row" role="listitem">
+            <div class="key">Buttons</div>
+            <div class="val">A / B , Start, Select )</div>
+          </div>
+          <div class="row" role="listitem">
+            <div class="key">Brain</div>
+            <div class="val">Adafruit Feather (model selection finalized in docs)</div>
+          </div>
+          <div class="row" role="listitem">
+            <div class="key">Connectivity</div>
+            <div class="val">USB + Wi-Fi</div>
+          </div>
+          <div class="row" role="listitem">
+            <div class="key">Roadmap</div>
+            <div class="val">Profiles • firmware updates • editions • companion tools</div>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:16px;">
+          <button class="btn primary" id="openUpdates2">Get Updates</button>
+          <button class="btn" id="openDeck2">Request Deck</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="cta">
+    <div class="wrap">
+      <div class="card cta">
+        <div>
+          <div class="sectionTitle">Next step</div>
+          <h3>Want early access + prototype notes?</h3>
+          
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn primary" id="openUpdates3">Get Updates</button>
+          <button class="btn" id="openDeck3">Request Deck</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap foot">
+      <div>
+        <span style="color:rgba(11,13,18,.90); font-weight:900; font-family:var(--title); letter-spacing:.10em;">THUMBTROLLER</span><br/>
+        NES feel • Thumb pad twist • For the culture
+      </div>
+      <div>© <span id="year"></span> RoboTechi Co.</div>
+    </div>
+  </footer>
+
+  <!-- MODAL: Updates -->
+  <div class="overlay" id="updatesModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Get Updates">
+      <div class="mhead">
+        <b>Get Updates</b>
+        <button class="x" data-close="updatesModal" aria-label="Close">✕</button>
+      </div>
+      <div class="mbody">
+        <p style="margin:0; color:var(--muted); line-height:1.7;">
+          Share your email to receive launch notes, prototype drops, and build logs.
+        </p>
+
+        <form id="updatesForm">
+          <div class="grid2">
+            <div>
+              <label for="uName">Name</label>
+              <input id="uName" name="uName" placeholder="Your name" autocomplete="name" />
+            </div>
+            <div>
+              <label for="uEmail">Email</label>
+              <input id="uEmail" name="uEmail" type="email" placeholder="you@email.com" autocomplete="email" required />
+            </div>
+          </div>
+
+          <label for="uNotes">What do you want to see?</label>
+          <textarea id="uNotes" name="uNotes" placeholder="Shell colors, button layout, thumb pad feel, use-case…"></textarea>
+
+          <button class="btn primary" type="submit">Send</button>
+          <div class="hint">This opens your email client. Swap to a real form endpoint later (Netlify/FormSubmit/API).</div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Deck -->
+  <div class="overlay" id="deckModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Request Deck">
+      <div class="mhead">
+        <b>Request Deck</b>
+        <button class="x" data-close="deckModal" aria-label="Close">✕</button>
+      </div>
+      <div class="mbody">
+        <p style="margin:0; color:var(--muted); line-height:1.7;">
+          Use this to request a one-page pitch deck / spec sheet.
+        </p>
+
+        <form id="deckForm">
+          <div class="grid2">
+            <div>
+              <label for="dCompany">Company</label>
+              <input id="dCompany" name="dCompany" placeholder="Studio / brand name" />
+            </div>
+            <div>
+              <label for="dEmail">Email</label>
+              <input id="dEmail" name="dEmail" type="email" placeholder="you@email.com" required />
+            </div>
+          </div>
+
+          <label for="dUse">Use case</label>
+          <select id="dUse" name="dUse">
+            <option value="press">Press / media</option>
+            <option value="partners">Partners / collabs</option>
+            <option value="investors">Investors / pitch</option>
+            <option value="customers">Customers / preorder</option>
+          </select>
+
+          <label for="dNotes">Notes</label>
+          <textarea id="dNotes" name="dNotes" placeholder="What should the deck emphasize?"></textarea>
+
+          <button class="btn primary" type="submit">Send</button>
+          
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Set year
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Modal helpers
+    const openModal = (id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = "flex";
+      el.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    };
+    const closeModal = (id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = "none";
+      el.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    };
+
+    // Open buttons
+    const bindOpen = (btnId, modalId) => {
+      const btn = document.getElementById(btnId);
+      if (btn) btn.addEventListener("click", () => openModal(modalId));
+    };
+
+    bindOpen("openUpdates", "updatesModal");
+    bindOpen("openUpdates2", "updatesModal");
+    bindOpen("openUpdates3", "updatesModal");
+
+    bindOpen("openDeck", "deckModal");
+    bindOpen("openDeck2", "deckModal");
+    bindOpen("openDeck3", "deckModal");
+
+    // Close buttons
+    document.querySelectorAll("[data-close]").forEach(btn => {
+      btn.addEventListener("click", (e) => closeModal(e.currentTarget.getAttribute("data-close")));
+    });
+
+    // Click outside
+    document.querySelectorAll(".overlay").forEach(overlay => {
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // Escape key closes all
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      ["updatesModal","deckModal"].forEach(closeModal);
+    });
+
+    // Mailto send (no backend)
+    function mailtoSend(subject, body) {
+      const mail = "odot.rva@proton.me"; // <-- change to your inbox
+      const url = `mailto:${encodeURIComponent(mail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = url;
+    }
+
+    document.getElementById("updatesForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("uName").value.trim();
+      const email = document.getElementById("uEmail").value.trim();
+      const notes = document.getElementById("uNotes").value.trim();
+      closeModal("updatesModal");
+
+      const subject = "Thumbtroller — Updates Signup";
+      const body =
+        `Name: ${name || "(blank)"}\n` +
+        `Email: ${email}\n\n` +
+        `Notes:\n${notes || "(none)"}\n`;
+
+      mailtoSend(subject, body);
+    });
+
+    document.getElementById("deckForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const company = document.getElementById("dCompany").value.trim();
+      const email = document.getElementById("dEmail").value.trim();
+      const use = document.getElementById("dUse").value;
+      const notes = document.getElementById("dNotes").value.trim();
+      closeModal("deckModal");
+
+      const subject = "Thumbtroller — Deck Request";
+      const body =
+        `Company: ${company || "(blank)"}\n` +
+        `Email: ${email}\n` +
+        `Use case: ${use}\n\n` +
+        `Notes:\n${notes || "(none)"}\n`;
+
+      mailtoSend(subject, body);
+    });
+  </script>
+</body>
+</html>
